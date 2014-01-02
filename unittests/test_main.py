@@ -48,4 +48,21 @@ class Test_Quest(unittest.TestCase):
         # Let's check if the response is correct.
         self.assertEqual(response.status_int, 200)
         self.assertEqual(True, "Upload File:" in response.body)
-      
+    
+    def test_pycrypto(self):
+        from Crypto.PublicKey import RSA
+        from Crypto import Random
+        random_generator = Random.new().read
+        key = RSA.generate(1024, random_generator)
+
+        self.assertEqual(True, key.can_encrypt())
+        self.assertEqual(True, key.can_sign())
+        self.assertEqual(True, key.has_private())
+
+        public_key = key.publickey()
+        
+        for username in ['chris', 'bob', 'mary-joe add']:
+            enc_data = public_key.encrypt(username, 32)
+            decrypted = key.decrypt(enc_data)
+            self.assertEqual(username, decrypted)
+          
