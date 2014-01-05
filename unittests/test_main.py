@@ -48,10 +48,7 @@ class Test_Quest(unittest.TestCase):
         # Let's check if the response is correct.
         self.assertEqual(response.status_int, 200)
         self.assertEqual(True, "<form action=" in response.body)
-    
-    def test_bad_test(self):
-        self.assertEqual(1,2)
-        
+            
     def test_pycrypto(self):
         from Crypto.PublicKey import RSA
         from Crypto import Random
