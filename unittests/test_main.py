@@ -13,7 +13,7 @@ from google.appengine.api import memcache
 from google.appengine.ext import testbed
 from google.appengine.ext import db
 import webapp2
-import uploader
+import main
 
 class Test_Quest(unittest.TestCase):
 
@@ -43,11 +43,11 @@ class Test_Quest(unittest.TestCase):
         # You can also pass headers, query arguments etc.
         request = webapp2.Request.blank('/')
         # Get a response for that request.
-        response = request.get_response(uploader.app)
+        response = request.get_response(main.app)
 
         # Let's check if the response is correct.
         self.assertEqual(response.status_int, 200)
-        self.assertEqual(True, "Upload File:" in response.body)
+        self.assertEqual(True, "<form action=" in response.body)
     
     def test_pycrypto(self):
         from Crypto.PublicKey import RSA
