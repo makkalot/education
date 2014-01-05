@@ -5,15 +5,10 @@ python:
 before_script:
 - ls
 - pwd
-- $PYTHONPATH
 - export PYTHONPATH=/home/travis/build/SingaporeClouds/education/google_appengine/
-- $PYTHONPATH
 - export PYTHONPATH=$PYTHONPATH:/home/travis/build/SingaporeClouds/education/google_appengine/lib/django-1.2/
-- $PYTHONPATH
 - export PYTHONPATH=$PYTHONPATH:/home/travis/build/SingaporeClouds/education/google_appengine/lib/webapp2-2.5.2/
-- $PYTHONPATH
 - export PYTHONPATH=$PYTHONPATH:/home/travis/build/SingaporeClouds/education/google_appengine/lib/webob_0_9/
-- $PYTHONPATH
 
 # command to install dependencies
 install:
