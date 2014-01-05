@@ -1,0 +1,39 @@
+<html>
+<head>
+	<title>Blob List</title>
+</head>
+<body>
+	{% if flash %}
+		<p>File has uploaded, please download the file at <a href="/serve/{{flash}}">here</a></p>
+	{% endif %}
+
+	<table>
+			<thead>
+				<tr>
+					<th>FileName</th>
+					<th>Type</th>
+					<th>Link</th>
+					<th>Creation</th>
+				</tr>	
+			</thead>
+			<tbody>
+				{% for blob in blobs %}
+					<tr>
+						<td>
+							File : {{blob.filename}}
+						</td>
+						<td>
+							{{blob.content_type}}
+						</td>
+						<td>
+							<a href="/serve/{{blob.key()}}">Link</a>
+						</td>
+						<td>
+							{{blob.creation}}
+						</td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>		
+</body>
+</html>

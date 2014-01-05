@@ -1,36 +1,42 @@
 from __future__ import with_statement
 import urllib
-import webapp2
+import logging
+import os
 
+import webapp2
+import jinja2
 from google.appengine.ext import blobstore
 from google.appengine.ext.webapp import blobstore_handlers
 from google.appengine.api import files
 from Crypto.PublicKey import RSA
 from Crypto import Random
 
+
+JINJA_ENVIRONMENT = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
+    extensions=['jinja2.ext.autoescape'],
+    autoescape=True)
+
+
+def list_current_blobs(total=5):
+    """
+    Gets a list of blobs in system
+    """
+    gqlQuery = blobstore.BlobInfo.gql("ORDER BY creation DESC")
+    blobs = gqlQuery.fetch(total)
+    return blobs
+
+
 class MainHandler(webapp2.RequestHandler):
     def get(self):
-        self.response.out.write('''<html><body><form action="/upload" enctype="multipart/form-data" method="post"><input type="file" name="file"/><input type="submit" /></form><body/><html/>''')
+        template = JINJA_ENVIRONMENT.get_template('templates/form.html')
+        self.response.write(template.render())
 
 class UploadHandler(webapp2.RequestHandler):
-    def crypt(self, plaintext):
-        # Use a fixed private key here to get a deterministic result for testing
-        key = RSA.importKey('''-----BEGIN RSA PRIVATE KEY-----
-        MIICXAIBAAKBgQCIJAdEmiawxYaf/ZTv/679mwxiwJPhHsKPIfoW8w0IRy0oZhkS
-        zp+M+UGIiKL3FDJjMkVVl8mpxJ8qMwkTkRte8+1GoxPRANmuvEsAIVpfVctJkIqJ
-        +FTcH8J28hPugIJFrWD4tWcPslr75s8fx0VJjcOkdV5gZAea2JlXKaXEvQIDAQAB
-        AoGAOkVJgxiD5Pe2xrYQUKVcrhn2NDJ/WUUEO6VsWPRRKLDmaDtDEiS0b++kGB97
-        uUvAwWqb+KXOYEbTZYmQofpi/yKSzDIgJy04u2LSmyAvlWrJzj3GE6NbHPv/ctlY
-        YUD51TFn3cc97TYCH+fW7HPxpbrRDr9sHvIC7f3vV5HuFJUCQQC6n23oUH3xQeIb
-        oNFLQ/GAIQULYQOEYSJv7Vy3nzkkNAKQxDP9/OcYgsGcK3VxzHVrjQVOjFX/kM1L
-        d+OtqjtbAkEAusBPWAqUT2CGenG11Vwz5dy1RP4k+xYjI7RLh7dsxGrAshl8YYVx
-        ILMvYtNNOFlo9cVCc7zRmUKu175j7kOzxwJBALX8pKwoWjh7W+g/UfnInueoy4eG
-        KmzcYD2vxXuWvJ1OTrYnbuAe0Kj5UZ5eTuATVunzkhpABdj7twcCObdvywMCQEHH
-        cysjrtG2widm3hFlBLK2ZvMCQaxfQ8lTvDb1mM4me/E/oNwI0Kwf8VTx8IUkmR/Y
-        d2uk2n8NSeCcIz7NggkCQFylnC7S7hlgZyUvaIpBsGzzdr8cyrTol4T1G9n7G2sE
-        Q1pc7/sXaYlMBZxKrCMWjAol9AZ2Cfpj6x5A3XnTm98=
-        -----END RSA PRIVATE KEY-----''')
+    def crypt(self, key_str, plaintext):
+        key = RSA.importKey(key_str)
         public_key = key.publickey()
+        #logging.info("PUBLIC_KEY : " + public_key.exportKey())
         enc_data = public_key.encrypt(plaintext, 32)
         
         # encode the byte data into ASCII data so that it could be printed out in the browser
@@ -38,16 +44,32 @@ class UploadHandler(webapp2.RequestHandler):
 
     def post(self):
         rows=self.request.POST.get('file').value.split("\n")
+        pub_key = self.request.POST.get('pub_key')
+
+        if not pub_key:
+            webapp2.abort(400, "Missing Public Key Param")
+
+        #clean it
+        pub_key = pub_key.strip()
+
         file_name = files.blobstore.create(mime_type='text/plain')
         with files.open(file_name, 'a') as f:
             for row in rows:
                 items = row.split(",")
                 if len(items) > 1:
-                    items[1] = self.crypt(items[1])
+                    items[1] = self.crypt(pub_key, items[1])
                 f.write("%s\n" % (",".join(items)))
         files.finalize(file_name)
+        
         blob_key = files.blobstore.get_blob_key(file_name)
-        self.response.out.write('<html><body>File has uploaded, please download the file at <a href="/serve/%s">here</a>' % blob_key )
+        
+        blobs = list_current_blobs()
+        template = JINJA_ENVIRONMENT.get_template('templates/blobs.html')
+        self.response.write(template.render({
+            "blobs":blobs,
+            "flash":str(blob_key)
+        }))
+
     
 class ServeHandler(blobstore_handlers.BlobstoreDownloadHandler):
     def get(self, resource):
@@ -55,7 +77,32 @@ class ServeHandler(blobstore_handlers.BlobstoreDownloadHandler):
         blob_info = blobstore.BlobInfo.get(resource)
         self.send_blob(blob_info)
 
+
+class ListBlobsHandler(webapp2.RequestHandler):
+    def get(self):
+        blobs = list_current_blobs()
+        template = JINJA_ENVIRONMENT.get_template('templates/blobs.html')
+        self.response.write(template.render({
+            "blobs":blobs,
+        }))
+
+
 app = webapp2.WSGIApplication([('/', MainHandler),
                                ('/upload', UploadHandler),
-                               ('/serve/([^/]+)?', ServeHandler)],
+                               ('/serve/([^/]+)?', ServeHandler),
+                               ('/blobs', ListBlobsHandler)],
                               debug=True)
+
+
+def handle_404(request, response, exception):
+    logging.exception(exception)
+    response.write('Missing Page')
+    response.set_status(404)
+
+def handle_500(request, response, exception):
+    logging.exception(exception)
+    response.write('A server error occurred!')
+    response.set_status(500)
+
+app.error_handlers[404] = handle_404
+app.error_handlers[500] = handle_500
