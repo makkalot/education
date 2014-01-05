@@ -4,16 +4,16 @@ python:
 
 before_script:
 - ls
+- pwd
 - $PYTHONPATH
-- export PYTHONPATH=google_appengine:google_appengine/lib/django-1.2:google_appengine/lib/webapp2-2.5.2:google_appengine/lib/webob_0_9
+#- export PYTHONPATH=google_appengine:google_appengine/lib/django-1.2:google_appengine/lib/webapp2-2.5.2:google_appengine/lib/webob_0_9
+- export PYTHONPATH=$PYTHONPATH
 - $PYTHONPATH
 
 # command to install dependencies
 install:
   - curl -O http://googleappengine.googlecode.com/files/google_appengine_1.8.1.zip && unzip -q google_appengine_1.8.1.zip
   - pip install webtest
-  - pip install pyquery
   - pip install pycrypto
-  - pip install mock
 # command to run tests
 script:  python unittests/test_main.py
