@@ -18,4 +18,5 @@ install:
   - pip install pycrypto
   - pip install pyyaml
 # command to run tests
-script:  python unittests/test_main.py
+#script:  python unittests/test_main.py
+script: nosetests -w unittests
