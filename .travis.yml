@@ -4,6 +4,9 @@ python:
 
 before_script:
 - ls
+- $PYTHONPATH
+- export PYTHONPATH=$PYTHONPATH:google_appengine:google_appengine/lib/django-1.2:google_appengine/lib/webapp2-2.5.2:google_appengine/lib/webob_0_9
+- $PYTHONPATH
 
 # command to install dependencies
 install:
@@ -12,6 +15,5 @@ install:
   - pip install pyquery
   - pip install pycrypto
   - pip install mock
-  - pip install nose
 # command to run tests
 script:  python unittests/test_main.py
