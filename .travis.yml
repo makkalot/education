@@ -4,7 +4,7 @@ python:
 before_script:
 - cd ..
 - wget http://googleappengine.googlecode.com/files/google_appengine_1.8.2.zip
-- unzip google_appengine_1.8.2.zip
+- unzip -q google_appengine_1.8.2.zip
 - rm google_appengine_1.8.2.zip
 script:
 - git clone https://github.com/SingaporeClouds/education.git
